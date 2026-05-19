@@ -1,5 +1,11 @@
 # TA 自動填報工具
 
+---
+破爛的學校，狗屎的系統，學生要麻想辦法自己寫工具克服，不然就活該自己填
+---
+
+![](https://media.fgo.wiki/thumb/c/ce/%E6%84%9A%E4%BA%BA%E8%8A%82_%E5%8D%A1%E9%9D%A2_FFJ_418.png/285px-%E6%84%9A%E4%BA%BA%E8%8A%82_%E5%8D%A1%E9%9D%A2_FFJ_418.png)
+
 ## 0. 先準備
 1. Windows 電腦
 2. 本專案資料夾
