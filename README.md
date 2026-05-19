@@ -1,7 +1,4 @@
-# TA 自動填報工具（新手版）
-
-這份說明是給「完全不會寫程式」的人。  
-照步驟貼指令即可使用。
+# TA 自動填報工具
 
 ## 0. 先準備
 1. Windows 電腦
@@ -33,7 +30,7 @@ bun --version
 官方安裝說明：  
 https://bun.com/docs/installation
 
-## 2. 設定 `.env`（只要做一次）
+## 2. 設定 `.env`
 
 在專案根目錄建立/修改 `.env`：
 
@@ -87,7 +84,7 @@ bun gemini/approve-records.mjs --ids <id1,id2>
 bun gemini/approve-records.mjs --all
 ```
 
-## 送審佇列規則（避免重複）
+## 送審佇列規則
 - `data/approved/to-submit.json` 預設只會放「本次新核准」資料。
 - 例如先送 1、2，下一次只核准 3，`to-submit.json` 只會有 3。
 - 不會重複把 1、2 再送一次。
