@@ -123,7 +123,7 @@ bun crawler/submit-records.mjs --input data/approved/to-submit.json --commit
 --course-id 3389
 --sign-in 12:00
 --sign-out 13:00
---notes 指導作頁
+--notes 指導作業
 --limit 3
 --verbose
 ```
