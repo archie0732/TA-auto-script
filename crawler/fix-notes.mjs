@@ -7,7 +7,7 @@ function parseArgs(argv) {
   const args = {
     courseId: "3389",
     months: ["2026-03", "2026-04"],
-    targetNote: "指導作頁",
+    targetNote: "指導作業",
     commit: false,
     verbose: false,
     output: path.join(ROOT, "data", "submit", "fix-notes-result.json"),
@@ -23,7 +23,7 @@ function parseArgs(argv) {
     else if (t === "--output" && argv[i + 1]) args.output = path.resolve(ROOT, argv[++i]);
     else if (t === "--help" || t === "-h") {
       console.log(`Usage:
-  node crawler/fix-notes.mjs [--course-id 3389] [--months 2026-03,2026-04] [--target-note 指導作頁] [--commit]
+  node crawler/fix-notes.mjs [--course-id 3389] [--months 2026-03,2026-04] [--target-note 指導作業] [--commit]
 `);
       process.exit(0);
     }

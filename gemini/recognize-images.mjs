@@ -387,13 +387,13 @@ function buildRecord(imagePath, parsed, sourceImageRef = "") {
     Array.isArray(parsed?.sessions) && parsed.sessions.length > 0
       ? parsed.sessions
       : [
-          {
-            session_date: parsed?.session_date ?? "",
-            class_group: parsed?.class_group ?? "",
-            student_ids: parsed?.student_ids ?? [],
-            raw_row_hint: "",
-          },
-        ];
+        {
+          session_date: parsed?.session_date ?? "",
+          class_group: parsed?.class_group ?? "",
+          student_ids: parsed?.student_ids ?? [],
+          raw_row_hint: "",
+        },
+      ];
 
   const sessions = [];
   const allValidIds = new Set();

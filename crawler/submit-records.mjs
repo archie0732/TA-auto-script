@@ -10,7 +10,7 @@ function parseArgs(argv) {
     courseId: "",
     signIn: "12:00",
     signOut: "13:00",
-    notes: "指導作頁",
+    notes: "指導作業",
     limit: 0,
     verbose: false,
     output: path.join(ROOT, "data", "submit", "submit-result.json"),
@@ -45,7 +45,7 @@ Options:
   --course-id 3389         指定課程 ID，不走名稱比對
   --sign-in 12:00          簽到時間
   --sign-out 13:00         簽退時間
-  --notes 指導作頁         課輔內容
+  --notes 指導作業          課輔內容
   --limit 5                只處理前 N 筆 session
   --verbose                顯示更多除錯資訊
 `);
