@@ -148,11 +148,11 @@ bun gemini/approve-records.mjs --all
 3. 同日期時段可能是「更新既有列」而不是新增一列
 
 ## Q4: 課輔內容錯誤
-目前預設固定寫入 `指導作頁`。  
+目前預設固定寫入 `指導作業`。  
 如需強制：
 
 ```powershell
-bun crawler/submit-records.mjs --input data/approved/to-submit.json --commit --notes 指導作頁
+bun crawler/submit-records.mjs --input data/approved/to-submit.json --commit --notes 指導作業
 ```
 
 ## 6. 建議你每次都用這組指令
