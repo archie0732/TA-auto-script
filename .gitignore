@@ -1,0 +1,30 @@
+# Local docs / notes
+AGENT.md
+SKILLs/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data (keep folder placeholders only)
+data/**
+!data/.gitkeep
+!data/approved/.gitkeep
+!data/pending/.gitkeep
+!data/preprocessed/.gitkeep
+!data/recognized/.gitkeep
+!data/submit/.gitkeep
+
+# Local input images (keep folder placeholder only)
+images/**
+!images/.gitkeep
+
+# Temp / debug artifacts
+.tmp*
+*.tmp
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
