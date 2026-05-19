@@ -155,7 +155,7 @@ bun gemini/approve-records.mjs --all
 bun crawler/submit-records.mjs --input data/approved/to-submit.json --commit --notes 指導作業
 ```
 
-## 6. 建議你每次都用這組指令
+## 範例(直接使用)
 
 ```powershell
 # 1) 辨識
