@@ -158,6 +158,19 @@ function extractHiddenInputs(html) {
   return out;
 }
 
+function extractOptionList(html) {
+  const options = [];
+  const optionRe = /<option[^>]*value=['"]([^'"]*)['"][^>]*>([\s\S]*?)<\/option>/gi;
+  let m;
+  while ((m = optionRe.exec(html)) !== null) {
+    options.push({
+      value: decodeHtmlEntities(m[1]).trim(),
+      label: decodeHtmlEntities(stripTags(m[2])).trim(),
+    });
+  }
+  return options;
+}
+
 function extractInputValue(html, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(
@@ -306,6 +319,47 @@ function pickCourseId(courseOptions, targetName, fallbackCourseId) {
   return "";
 }
 
+function normalizeClassGroup(value) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (!raw) return "";
+  const cleaned = raw
+    .replace(/班/g, "")
+    .replace(/Ａ/g, "A")
+    .replace(/Ｂ/g, "B");
+  return cleaned;
+}
+
+function pickCourseNameId(courseNameOptions, task, fallbackCourseId) {
+  if (!Array.isArray(courseNameOptions) || courseNameOptions.length === 0) {
+    return fallbackCourseId;
+  }
+  if (courseNameOptions.length === 1 && courseNameOptions[0].value) {
+    return courseNameOptions[0].value;
+  }
+
+  const classGroup = normalizeClassGroup(task.class_group);
+  if (classGroup === "A") {
+    const match = courseNameOptions.find((opt) => /(?:_1|_A)\s*$/i.test(String(opt.label ?? "").trim()));
+    if (match?.value) return match.value;
+  }
+  if (classGroup === "B") {
+    const match = courseNameOptions.find((opt) => /(?:_2|_B)\s*$/i.test(String(opt.label ?? "").trim()));
+    if (match?.value) return match.value;
+  }
+
+  const targetNorm = normText(task.course_name);
+  if (targetNorm) {
+    for (const opt of courseNameOptions) {
+      if (normText(opt.label) === targetNorm) return opt.value;
+    }
+    for (const opt of courseNameOptions) {
+      if (normText(opt.label).includes(targetNorm)) return opt.value;
+    }
+  }
+
+  return fallbackCourseId || courseNameOptions[0]?.value || "";
+}
+
 function pickCourseNum(courseNumOptions, sessionDate) {
   const prefix = `${sessionDate} `;
   const first = courseNumOptions.find((opt) => opt.value.startsWith(prefix));
@@ -325,7 +379,10 @@ function extractMonthRows(monthHtml) {
     if (!rid) continue;
     const dateTime = (row.match(/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}~\d{2}:\d{2})/) || [])[1] || "";
     if (!dateTime) continue;
-    const courseName = "";
+    const labelMatches = Array.from(
+      row.matchAll(/<label[^>]*class=['"]x-blue_dg_label['"][^>]*>([\s\S]*?)<\/label>/gi),
+    );
+    const courseName = labelMatches[2] ? decodeHtmlEntities(stripTags(labelMatches[2][1])).trim() : "";
     const note = "";
     rows.push({ rid, course_name: courseName, date_time: dateTime, note });
   }
@@ -341,10 +398,13 @@ function findExistingRidByCourseNum(monthHtml, courseNumValue) {
   return "";
 }
 
-function findExistingRowByDate(monthHtml, sessionDate) {
+function findExistingRowByDate(monthHtml, sessionDate, targetCourseName = "") {
   const rows = extractMonthRows(monthHtml);
+  const targetNorm = normText(targetCourseName);
   for (const r of rows) {
-    if (String(r.date_time).startsWith(`${sessionDate} `)) return r;
+    if (!String(r.date_time).startsWith(`${sessionDate} `)) continue;
+    if (targetNorm && normText(r.course_name) !== targetNorm) continue;
+    return r;
   }
   return null;
 }
@@ -394,6 +454,13 @@ async function login(session, env, verbose = false) {
 async function fetchCourseOptions(session) {
   const { text } = await session.getText("pages/course006.php?mmmid=149");
   return extractOptions(text, "tareplyid").filter((o) => o.value);
+}
+
+async function fetchCourseNumOptions(session, courseNameId) {
+  const { text } = await session.postForm("pages/r_course66.php", {
+    oid: courseNameId,
+  });
+  return extractOptionList(text).filter((o) => o.value);
 }
 
 function nowIso() {
@@ -486,9 +553,19 @@ async function main() {
       `&tareplymonth=${encodeURIComponent(month)}&tareplyid=${encodeURIComponent(courseId)}`;
     const addPage = await session.getText(addUrl);
     const hidden = extractHiddenInputs(addPage.text);
-    const courseNumOptions = extractOptions(addPage.text, "ryyTaCourseNum");
-    const existingRow = findExistingRowByDate(monthPageBefore.text, task.session_date);
+    const courseNameOptions = extractOptions(addPage.text, "ryyTaCourseName");
+    const courseNameId = pickCourseNameId(courseNameOptions, task, courseId);
+    let courseNumOptions = extractOptions(addPage.text, "ryyTaCourseNum");
+    if (courseNameId && courseNameId !== courseId) {
+      const dynamicCourseNumOptions = await fetchCourseNumOptions(session, courseNameId);
+      if (dynamicCourseNumOptions.length > 0) {
+        courseNumOptions = dynamicCourseNumOptions;
+      }
+    }
     const fallbackCourseNumValue = pickCourseNum(courseNumOptions, task.session_date);
+    const selectedCourseNameLabel =
+      courseNameOptions.find((opt) => opt.value === courseNameId)?.label || task.course_name;
+    const existingRow = findExistingRowByDate(monthPageBefore.text, task.session_date, selectedCourseNameLabel);
     const courseNumValue = existingRow?.date_time || fallbackCourseNumValue;
     if (!existingRow && !courseNumValue) {
       result.reason = `cannot find course time slot for ${task.session_date}`;
@@ -506,7 +583,7 @@ async function main() {
       mem_page_size: hidden.mem_page_size || "20",
       mem_p: hidden.mem_p || "1",
       mem_new: hidden.mem_new || "1",
-      ryyTaCourseName: courseId,
+      ryyTaCourseName: courseNameId,
       ryyTaCourseNum: courseNumValue,
       ryycouse_010: args.signIn,
       ryycouse_011: args.signOut,
@@ -536,10 +613,12 @@ async function main() {
       };
       result.mode = "update-existing";
     } else {
-      result.mode = "add-new";
+    result.mode = "add-new";
     }
 
     result.course_id = courseId;
+    result.course_name_id = courseNameId;
+    result.course_name_label = selectedCourseNameLabel;
     result.course_num = courseNumValue;
     result.student_count = validIds.length;
 

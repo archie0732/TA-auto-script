@@ -200,19 +200,27 @@ function normalizeClassGroup(raw) {
   return "UNKNOWN";
 }
 
+function rocToAdYear(y) {
+  // 民國年（2~3 位數）轉西元，例如 114 -> 2025
+  const n = Number(y);
+  if (!Number.isFinite(n) || n <= 0) return NaN;
+  return n < 1000 ? n + 1911 : n;
+}
+
 function normalizeDate(raw, fallbackYear = new Date().getFullYear()) {
   const value = String(raw ?? "").trim();
   if (!value) return "";
 
-  const iso = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (iso) {
-    const y = Number(iso[1]);
-    const m = String(Math.max(1, Math.min(12, Number(iso[2])))).padStart(2, "0");
-    const d = String(Math.max(1, Math.min(31, Number(iso[3])))).padStart(2, "0");
+  // YYYY-MM-DD、YYYY/MM/DD，或民國年 114/11/01
+  const full = value.match(/^(\d{2,4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (full) {
+    const y = rocToAdYear(full[1]);
+    const m = String(Math.max(1, Math.min(12, Number(full[2])))).padStart(2, "0");
+    const d = String(Math.max(1, Math.min(31, Number(full[3])))).padStart(2, "0");
     return `${y}-${m}-${d}`;
   }
 
-  const md = value.match(/^(\d{1,2})[-/](\d{1,2})$/);
+  const md = value.match(/^(\d{1,2})[-/.](\d{1,2})$/);
   if (md) {
     const m = String(Math.max(1, Math.min(12, Number(md[1])))).padStart(2, "0");
     const d = String(Math.max(1, Math.min(31, Number(md[2])))).padStart(2, "0");
@@ -291,6 +299,7 @@ Return exactly one JSON object, no markdown.
 
 Required output schema:
 {
+  "sheet_year_roc": "ROC year number printed/handwritten in the sheet header (e.g. 114), or empty",
   "class_group": "A|B|MIXED|UNKNOWN",
   "course_name": "string or empty",
   "sessions": [
@@ -311,7 +320,9 @@ Rules:
 2) Keep student_ids digits only.
 3) DO NOT guess missing digits. If not 9 digits, keep it in uncertain_items instead.
 4) If a student cannot be mapped to a date, put it in unmatched_student_ids.
-5) Output valid JSON only.
+5) The sheet header shows the year in ROC (Minguo) format, e.g. "114 學年 11 月". Put that number in sheet_year_roc. Write session_date as MM/DD; do NOT convert or invent a year.
+6) Only include a session if that date column has a date or at least one student. Skip blank date columns.
+7) Output valid JSON only.
 
 File: ${path.basename(imagePath)}
 `;
@@ -395,12 +406,20 @@ function buildRecord(imagePath, parsed, sourceImageRef = "") {
         },
       ];
 
+  const sheetYearAd = rocToAdYear(String(parsed?.sheet_year_roc ?? "").replace(/[^\d]/g, ""));
+  const fallbackYear = Number.isFinite(sheetYearAd) ? sheetYearAd : new Date().getFullYear();
+  const yearUncertain = !Number.isFinite(sheetYearAd);
+
   const sessions = [];
   const allValidIds = new Set();
   const allInvalidIds = new Set();
 
   for (const item of fallbackSessions) {
-    const date = normalizeDate(item?.session_date ?? "");
+    const rawDate = String(item?.session_date ?? "").trim();
+    const rawIds = Array.isArray(item?.student_ids) ? item.student_ids : [];
+    // 空白的日期欄（沒有日期也沒有學號）不算一個場次
+    if (!rawDate && normalizeIds(rawIds).length === 0) continue;
+    const date = normalizeDate(rawDate, fallbackYear);
     const classGroup = normalizeClassGroup(item?.class_group ?? globalClassGroup);
     const split = splitStudentIds(item?.student_ids ?? []);
     split.valid.forEach((s) => allValidIds.add(s));
@@ -433,6 +452,10 @@ function buildRecord(imagePath, parsed, sourceImageRef = "") {
   }
   if (allInvalidIds.size > 0) {
     uncertain.push(`detected non-9-digit ids: ${Array.from(allInvalidIds).join(", ")}`);
+  }
+
+  if (yearUncertain) {
+    uncertain.push(`sheet year not found, assumed ${fallbackYear}`);
   }
 
   const primarySessionDate = sessions.find((s) => s.session_date)?.session_date ?? "";

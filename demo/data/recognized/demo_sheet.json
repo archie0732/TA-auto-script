@@ -1,0 +1,36 @@
+{
+  "id": "demo_sheet-1790441910667",
+  "source_image": "images/demo_sheet.png",
+  "class_group": "A",
+  "course_name": "物件導向程式設計",
+  "session_count": 1,
+  "sessions": [
+    {
+      "session_date": "2025-11-01",
+      "class_group": "A",
+      "student_ids": [
+        "400000001",
+        "400000002",
+        "400000003"
+      ],
+      "student_count": 3,
+      "invalid_student_ids": [],
+      "raw_row_hint": "Rows 1-3",
+      "uncertain_items": []
+    }
+  ],
+  "session_date": "2025-11-01",
+  "student_ids": [
+    "400000001",
+    "400000002",
+    "400000003"
+  ],
+  "student_count": 3,
+  "invalid_student_ids": [],
+  "unmatched_student_ids": [],
+  "raw_notes": "TA: 許育邵, Class: 資工-A",
+  "uncertain_items": [],
+  "status": "pending_review",
+  "needs_human_review": false,
+  "recognized_at": "2026-09-26T16:58:30.668Z"
+}
